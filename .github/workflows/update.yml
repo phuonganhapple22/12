@@ -1,0 +1,50 @@
+name: Cập nhật playlist
+
+on:
+  schedule:
+    - cron: "7 */6 * * *"    # mỗi 6 giờ (giờ UTC: 00:07, 06:07, 12:07, 18:07)
+  workflow_dispatch: {}       # cho phép bấm chạy tay
+
+permissions:
+  contents: write
+
+concurrency:
+  group: playlist-branch
+  cancel-in-progress: false
+
+env:
+  DATA_BRANCH: playlist       # nhánh chứa file m3u, đổi tên nếu muốn
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tải và lọc playlist
+        env:
+          SOURCE_URL: ${{ secrets.SOURCE_URL }}
+          OUTPUT_DIR: /tmp/out
+        run: python update_playlist.py
+      - name: Lưu file vào nhánh riêng
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin "$DATA_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$DATA_BRANCH"
+            git checkout -B "$DATA_BRANCH" "origin/$DATA_BRANCH"
+          else
+            git checkout --orphan "$DATA_BRANCH"
+            git rm -rf . >/dev/null
+          fi
+          # Chỉ ghi đè file có kênh mới; file nào lần này không có kênh khớp thì giữ bản cũ
+          cp /tmp/out/*.m3u . 
+          git add -A -- '*.m3u'
+          if git diff --cached --quiet; then
+            echo "Không có thay đổi"
+          else
+            git commit -m "Cập nhật token"
+            git push origin "$DATA_BRANCH"
+          fi
