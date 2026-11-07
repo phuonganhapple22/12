@@ -1,0 +1,38 @@
+name: Dọn lịch sử playlist
+
+on:
+  schedule:
+    - cron: "37 3 * * 1"      # thứ Hai hàng tuần, 03:37 UTC (10:37 giờ Việt Nam)
+  workflow_dispatch: {}        # cho phép bấm chạy tay
+
+permissions:
+  contents: write
+
+# Dùng chung nhóm với workflow cập nhật để 2 workflow không chạy đè lên nhau
+concurrency:
+  group: playlist-branch
+  cancel-in-progress: false
+
+env:
+  DATA_BRANCH: playlist
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gộp toàn bộ lịch sử nhánh playlist thành 1 commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git ls-remote --exit-code --heads origin "$DATA_BRANCH" >/dev/null 2>&1; then
+            echo "Chưa có nhánh $DATA_BRANCH, bỏ qua."
+            exit 0
+          fi
+          git fetch origin "$DATA_BRANCH"
+          git checkout -B "$DATA_BRANCH" "origin/$DATA_BRANCH"
+          echo "Số commit trước khi dọn: $(git rev-list --count HEAD)"
+          git checkout --orphan clean-tmp
+          git add -A
+          git commit -m "Dọn lịch sử $(date -u +%F)"
+          git push --force origin clean-tmp:"$DATA_BRANCH"
