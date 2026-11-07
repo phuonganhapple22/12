@@ -27,7 +27,9 @@ jobs:
         env:
           SOURCE_URL: ${{ secrets.SOURCE_URL }}
           OUTPUT_DIR: /tmp/out
-        run: python update_playlist.py
+        run: |
+          cp playlists.json /tmp/playlists.json
+          python update_playlist.py
       - name: Lưu file vào nhánh riêng
         run: |
           git config user.name "github-actions"
@@ -40,6 +42,8 @@ jobs:
             git rm -rf . >/dev/null
           fi
           # Chỉ ghi đè file có kênh mới; file nào lần này không có kênh khớp thì giữ bản cũ
+          # Xóa file m3u nào không còn khai báo trong playlists.json
+          python3 -c "import json,os;keep=set(json.load(open('/tmp/playlists.json')));[os.remove(f) for f in os.listdir('.') if f.endswith('.m3u') and f not in keep]"
           cp /tmp/out/*.m3u . 
           git add -A -- '*.m3u'
           if git diff --cached --quiet; then
