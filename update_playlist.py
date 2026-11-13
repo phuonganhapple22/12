@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tải playlist gốc, lọc kênh cần dùng, ghi ra tv360-12.m3u (token luôn mới)."""
+"""Tải playlist gốc, lọc kênh cần dùng, ghi ra tv360-12.m3u và chèn kênh dự phòng vào playlist tổng truyenhinh.m3u (token luôn mới)."""
 import os, re, sys, time, urllib.request
 
 SOURCE_URL = os.environ.get("SOURCE_URL", "").strip()      # link gốc có u= & p= (để trong GitHub Secret)
@@ -44,6 +44,32 @@ def parse(text):
             cur = None
     return out
 
+def rename_entry(lines, new_name):
+    """Đổi tên hiển thị của 1 kênh (dòng #EXTINF), giữ nguyên các dòng còn lại."""
+    out = list(lines)
+    head = out[0].rsplit(",", 1)[0]
+    head = re.sub(r'tvg-name="[^"]*"', f'tvg-name="{new_name}"', head)
+    out[0] = head + "," + new_name
+    return out
+
+def merge(base_path, specs, channels):
+    """Lấy playlist tổng (base_path), chèn kênh mới từ nguồn vào. Trả về list (tên, dòng) hoặc None."""
+    base = parse(open(base_path, encoding="utf-8").read())
+    added = 0
+    for sp in specs:
+        pat = re.compile(sp["match"], re.I)
+        src = next(((n, l) for n, l in channels if pat.search(n)), None)
+        if not src:
+            print(f"  Không thấy kênh khớp {sp['match']} trong nguồn, bỏ qua.")
+            continue
+        name = sp.get("rename") or src[0]
+        lines = rename_entry(src[1], name)
+        base = [(n, l) for n, l in base if n != name]      # xóa bản cũ (nếu có) trước khi chèn
+        pos = next((i for i, (n, _) in enumerate(base) if n == sp.get("after")), None)
+        base.insert(len(base) if pos is None else pos + 1, (name, lines))
+        added += 1
+    return base if added else None
+
 def main():
     if SOURCE_FILE:
         text = open(SOURCE_FILE, encoding="utf-8").read()
@@ -62,8 +88,14 @@ def main():
         if "/" in filename or not filename.endswith(".m3u"):
             print(f"Bỏ qua tên file không hợp lệ: {filename}")
             continue
-        pats = [re.compile(p, re.I) for p in patterns]
-        keep = [(n, l) for n, l in channels if any(p.search(n) for p in pats)]
+        if isinstance(patterns, dict):      # kiểu gộp vào playlist tổng: {"base": "...", "channels": [...]}
+            keep = merge(patterns["base"], patterns["channels"], channels)
+            if keep is None:
+                print(f"{filename}: nguồn không có kênh cần chèn, giữ nguyên file cũ trên nhánh.")
+                continue
+        else:                               # kiểu cũ: chỉ lọc kênh theo regex
+            pats = [re.compile(p, re.I) for p in patterns]
+            keep = [(n, l) for n, l in channels if any(p.search(n) for p in pats)]
         if not keep:
             print(f"{filename}: không có kênh khớp, giữ nguyên file cũ trên nhánh.")
             continue

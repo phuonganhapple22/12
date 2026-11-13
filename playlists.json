@@ -1,3 +1,12 @@
 {
-  "tv360-12.m3u": ["^TV360\\+12$"]
+  "tv360-12.m3u": {
+    "base": "base/tv360-12.m3u",
+    "channels": [
+      {
+        "match": "^TV360\\+12$",
+        "rename": "TV360+12 (dự phòng)",
+        "after": "TV360+12"
+      }
+    ]
+  }
 }
