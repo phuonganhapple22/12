@@ -10,5 +10,5 @@ https://vmttv.dpdns.org/tv360/index.php/live.m3u8?id=tv360-12
 #EXTVLCOPT:http-user-agent=Dalvik/2.1.0
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key=https://tv.vietanhtv.top/tivi/cleankey.php?id=tv360plus12&token=3d92fcd055275635ca615aa9ee5fea0a
-https://tv.vietanhtv.top/tv360/tv3602.php?id=tv360-12&expires=1795504780&token=6dadf16fe7d4f3afd84965b51a096aa4
+#KODIPROP:inputstream.adaptive.license_key=https://tv.vietanhtv.top/tivi/cleankey.php?id=tv360plus12&token=22d3f97186b203ae62b0cc5024cafb66
+https://tv.vietanhtv.top/tv360/tv3602.php?id=tv360-12&expires=1795563939&token=4cf9e44dea87daf8e3f4714e18befd61
