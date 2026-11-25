@@ -27,6 +27,7 @@ jobs:
         env:
           SOURCE_URL: ${{ secrets.SOURCE_URL }}
           OUTPUT_DIR: /tmp/out
+          LIST_NAMES: "1"          # in danh sách tên kênh nguồn ra log để dễ chỉnh regex
         run: |
           cp playlists.json /tmp/playlists.json
           python update_playlist.py
